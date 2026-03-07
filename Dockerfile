@@ -11,6 +11,28 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends tzdata ca-certificates openssh-server vim nano sudo procps \
     && rm -rf /var/lib/apt/lists/*
 
+# 安装浏览器运行所需的系统依赖
+RUN apt-get update && apt-get install -y \
+    libgtk-3-0 \
+    libasound2 \
+    libdbus-1-3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libgbm1 \
+    libpangocairo-1.0-0 \
+    libpango-1.0-0 \
+    libxkbcommon0 \
+    libxtst6 \
+    --no-install-recommends && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Install uv via the official Docker image (recommended approach, no pip needed)
