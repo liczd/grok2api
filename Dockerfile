@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends tzdata ca-certificates \
+    && apt-get install -y --no-install-recommends tzdata ca-certificates openssh-server vim nano sudo procps \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -34,9 +34,13 @@ COPY scripts /app/scripts
 RUN sed -i 's/\r$//' /app/scripts/*.sh || true \
     && chmod +x /app/scripts/*.sh || true
 
-RUN mkdir -p /app/data /app/data/tmp /app/logs
+RUN mkdir -p /app/data /app/data/tmp /app/logs \
+    && mkdir -p /var/run/sshd \
+    && echo 'root:root' | chpasswd \
+    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
+    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-EXPOSE 8000
+EXPOSE 8000 22
 
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
 CMD ["/app/scripts/start.sh"]

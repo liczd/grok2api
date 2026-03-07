@@ -8,4 +8,7 @@ WORKERS="${SERVER_WORKERS:-1}"
 
 LOG_LEVEL_LOWER="$(printf "%s" "${LOG_LEVEL:-INFO}" | tr '[:upper:]' '[:lower:]')"
 
+# Start SSH daemon
+/usr/sbin/sshd
+
 exec uvicorn main:app --host "$HOST" --port "$PORT" --workers "$WORKERS" --log-level "$LOG_LEVEL_LOWER" --proxy-headers --forwarded-allow-ips='*'
