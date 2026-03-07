@@ -3,9 +3,9 @@ FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     TZ=Asia/Shanghai \
-    VIRTUAL_ENV=/opt/venv
+    UV_PROJECT_ENVIRONMENT=/app/.venv
 
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends tzdata ca-certificates openssh-server vim nano sudo procps \
@@ -13,16 +13,20 @@ RUN apt-get update \
 
 WORKDIR /app
 
-RUN python -m venv "$VIRTUAL_ENV" \
-    && pip install --no-cache-dir uv
+# Install uv via the official Docker image (recommended approach, no pip needed)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 COPY pyproject.toml uv.lock /app/
 
-RUN uv sync --frozen --no-dev --no-install-project --active
+RUN uv sync --frozen --no-dev --no-install-project
 
 # Pre-install Playwright Chromium + OS deps to make auto-register/solver usable in Docker
 # without doing `apt-get` at runtime.
 RUN python -m playwright install --with-deps chromium
+
+# Pre-fetch camoufox Firefox binary so the container works without network access at runtime.
+# camoufox is the recommended solver browser type (higher Turnstile success rate on accounts.x.ai).
+RUN python -m camoufox fetch
 
 COPY config.defaults.toml /app/config.defaults.toml
 COPY app /app/app
