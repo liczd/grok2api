@@ -192,7 +192,9 @@ if __name__ == "__main__":
     import uvicorn
 
     host = os.getenv("SERVER_HOST", "0.0.0.0")
-    port = int(os.getenv("SERVER_PORT", "8000"))
+    # Allow Zeabur's default PORT to take precedence
+    port_env = os.getenv("PORT") or os.getenv("SERVER_PORT", "8000")
+    port = int(port_env)
     workers = int(os.getenv("SERVER_WORKERS", "1"))
 
     # 平台检查
@@ -211,5 +213,7 @@ if __name__ == "__main__":
         host=host,
         port=port,
         workers=workers,
+        proxy_headers=True,
+        forwarded_allow_ips="*",
         log_level=os.getenv("LOG_LEVEL", "INFO").lower(),
     )
