@@ -4,7 +4,7 @@ services:
     image: ${GROK2API_IMAGE:-ghcr.io/tqzhr/grok2api:latest}
     ports:
       - "${GROK2API_PORT:-8000}:${SERVER_PORT:-8000}"
-      - "${SSH_PORT:-22222}:22"
+      - "${SSH_PORT:-22222}:22222"
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

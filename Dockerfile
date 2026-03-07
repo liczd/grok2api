@@ -38,9 +38,10 @@ RUN mkdir -p /app/data /app/data/tmp /app/logs \
     && mkdir -p /var/run/sshd \
     && echo 'root:root' | chpasswd \
     && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
+    && sed -i 's/#Port 22/Port 22222/' /etc/ssh/sshd_config
 
-EXPOSE 8000 22
+EXPOSE 8000 22222
 
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
 CMD ["/app/scripts/start.sh"]
