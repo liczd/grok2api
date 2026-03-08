@@ -2,7 +2,7 @@ services:
   grok2api:
     container_name: grok2api
     build: .
-    user: root
+    # user: root # 在 Claw.cloud Run 中通常不需要显式指定，除非遇到权限问题
     ports:
       - "${GROK2API_PORT:-8000}:${SERVER_PORT:-8000}"
       - "${SSH_PORT:-22222}:22222"
@@ -19,19 +19,29 @@ services:
       # 自动化注册核心配置
       REGISTER_ACTION_ID: "grok-register"
       BROWSER_TYPE: "camoufox"
-      # --- 关键修改：删掉或注释掉下面这三行 ---
-      # 理由：让程序使用镜像内 /opt 目录下的浏览器，而不是去空的挂载卷里找
-      # PLAYWRIGHT_BROWSERS_PATH: /app/data/ms-playwright  <-- 删除此行
-      # TMPDIR: /app/data/tmp                             <-- 删除此行
-      # XDG_CACHE_HOME: /app/data/.cache                  <-- 删除此行
-      # ---------------------------------------
+
+      # --- 关键路径优化：适配 Claw.cloud 存储机制 ---
+      # 1. 指向镜像内安装好的只读浏览器内核路径
+      PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+
+      # 2. 将运行时产生的“变更文件”强制导向挂载卷，避免容器层变更报错
+      # 浏览器运行时产生的 profile、cookies、addon 缓存都会存入此处
+      XDG_CACHE_HOME: /app/data/.browser_runtime
+
+      # 3. 临时文件也导向挂载卷
+      TMPDIR: /app/data/tmp
+      # --------------------------------------------
 
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-    shm_size: "1gb" # 保持 1gb，足够 1-2 个 worker 使用
+
+    # 共享内存优化
+    shm_size: "1gb"
+
     init: true
     restart: unless-stopped
+
     healthcheck:
       test: [ "CMD", "python", "-c", "import os,urllib.request; p=os.getenv('SERVER_PORT','8000'); urllib.request.urlopen(f'http://127.0.0.1:{p}/health', timeout=2).read();" ]
       interval: 30s
@@ -39,6 +49,7 @@ services:
       retries: 3
       start_period: 40s
 
+  # Redis 辅助容器（可选）
   redis:
     profiles: [ "redis" ]
     container_name: grok2api-redis
@@ -52,6 +63,7 @@ services:
       timeout: 3s
       retries: 10
 
+  # PostgreSQL 辅助容器（可选）
   pgsql:
     profiles: [ "pgsql" ]
     container_name: grok2api-pgsql
@@ -69,6 +81,7 @@ services:
       timeout: 5s
       retries: 10
 
+  # MySQL 辅助容器（可选）
   mysql:
     profiles: [ "mysql" ]
     container_name: grok2api-mysql
