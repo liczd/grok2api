@@ -10,10 +10,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     CAMOUFOX_DIR=/opt/camoufox-base
 
 # 安装依赖
+# 2. 安装系统依赖（已修正包名）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata ca-certificates openssh-server sudo procps \
+    # Playwright/Camoufox 运行所需的最小基础库
     libgtk-3-0 libasound2 libdbus-1-3 libnss3 libatk1.0-0 \
-    libatk-bridge2.0-0 libgbm1 libpangocairo-1-0-0 libpango-1.0-0 \
+    libatk-bridge2.0-0 libgbm1 libpango-1.0-0 libpangoft2-1.0-0 \
     libxkbcommon0 \
     && rm -rf /var/lib/apt/lists/*
 
