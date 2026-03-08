@@ -2,13 +2,21 @@
 set -eu
 
 HOST="${SERVER_HOST:-0.0.0.0}"
-# Allow Zeabur's default PORT environment variable to override SERVER_PORT
 PORT="${PORT:-${SERVER_PORT:-8000}}"
 WORKERS="${SERVER_WORKERS:-1}"
-
 LOG_LEVEL_LOWER="$(printf "%s" "${LOG_LEVEL:-INFO}" | tr '[:upper:]' '[:lower:]')"
 
-# Start SSH daemon
+# 启动 SSH
 /usr/sbin/sshd
 
-exec uvicorn main:app --host "$HOST" --port "$PORT" --workers "$WORKERS" --log-level "$LOG_LEVEL_LOWER" --proxy-headers --forwarded-allow-ips='*'
+# 使用 xvfb-run 启动应用，为浏览器提供虚拟显示环境
+# -s "-screen 0 1280x1024x24" 是设置虚拟显示器参数
+echo "[Start] Launching Uvicorn with Xvfb..."
+exec xvfb-run -a -s "-screen 0 1280x1024x24" \
+    uvicorn main:app \
+    --host "$HOST" \
+    --port "$PORT" \
+    --workers "$WORKERS" \
+    --log-level "$LOG_LEVEL_LOWER" \
+    --proxy-headers \
+    --forwarded-allow-ips='*'
