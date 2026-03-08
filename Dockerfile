@@ -1,17 +1,15 @@
 FROM python:3.13-slim
 
-# 1. 基础环境设置（不要在这里设置 TMPDIR）
+# 1. 基础环境设置
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     TZ=Asia/Shanghai \
-    UV_PROJECT_ENVIRONMENT=/app/.venv
+    UV_PROJECT_ENVIRONMENT=/app/.venv \
+    PATH="/app/.venv/bin:$PATH"
 
-ENV PATH="/app/.venv/bin:$PATH"
-
-# 2. 安装系统依赖（去掉 xvfb, xauth, 以及冗余的图形库）
+# 2. 安装系统依赖（精简版，移除 xvfb）
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tzdata ca-certificates openssh-server vim nano sudo procps \
-    # Playwright/Camoufox 运行所需的最小基础库
+    tzdata ca-certificates openssh-server sudo procps \
     libgtk-3-0 libasound2 libdbus-1-3 libnss3 libatk1.0-0 \
     libatk-bridge2.0-0 libgbm1 libpangocairo-1.0-0 libpango-1.0-0 \
     libxkbcommon0 \
@@ -19,20 +17,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# 3. 创建必要的持久化目录
-RUN mkdir -p /app/data/tmp /app/data/.cache /app/data/ms-playwright /app/logs
+# 3. 关键：设置浏览器路径到 /opt (避免被挂载卷覆盖)
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright \
+    XDG_CACHE_HOME=/opt/browser-cache \
+    TMPDIR=/tmp
 
-# 4. 目录创建好之后，再设置指向持久化目录的环境变量（供运行时使用）
-ENV TMPDIR=/app/data/tmp \
-    PLAYWRIGHT_BROWSERS_PATH=/app/data/ms-playwright \
-    XDG_CACHE_HOME=/app/data/.cache
+# 创建目录并确保权限
+RUN mkdir -p $PLAYWRIGHT_BROWSERS_PATH $XDG_CACHE_HOME /app/data /app/logs
 
-# 5. 后续的业务逻辑构建...
+# 4. 构建业务逻辑
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock /app/
 RUN uv sync --frozen --no-dev --no-install-project
 
-# 6.安装浏览器
+# 5. 安装浏览器到 /opt
 RUN .venv/bin/python -m playwright install --with-deps chromium firefox
 RUN .venv/bin/python -m camoufox fetch
 
@@ -41,16 +39,12 @@ COPY app /app/app
 COPY main.py /app/main.py
 COPY scripts /app/scripts
 
+# 6. 处理脚本权限及 SSH 配置
 RUN sed -i 's/\r$//' /app/scripts/*.sh || true \
-    && chmod +x /app/scripts/*.sh || true
-
-# 确保所有运行时需要的目录都存在
-RUN mkdir -p /app/data /app/data/tmp /app/data/.cache /app/logs /app/data/ms-playwright \
+    && chmod +x /app/scripts/*.sh || true \
     && mkdir -p /var/run/sshd \
     && echo 'root:root' | chpasswd \
-    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config \
-    && sed -i 's/#Port 22/Port 22222/' /etc/ssh/sshd_config
+    && sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 EXPOSE 8000 22222
 

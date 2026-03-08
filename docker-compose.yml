@@ -1,10 +1,8 @@
 services:
   grok2api:
     container_name: grok2api
-    # 如果你本地修改了 Dockerfile，记得使用 build: . 而不是 image
     build: .
-    # image: ${GROK2API_IMAGE:-ghcr.io/tqzhr/grok2api:latest}
-    user: root # 确保有权限操作挂载的 volume
+    user: root
     ports:
       - "${GROK2API_PORT:-8000}:${SERVER_PORT:-8000}"
       - "${SSH_PORT:-22222}:22222"
@@ -21,16 +19,17 @@ services:
       # 自动化注册核心配置
       REGISTER_ACTION_ID: "grok-register"
       BROWSER_TYPE: "camoufox"
-
-      # 强制路径重定向到挂载的持久化卷
-      PLAYWRIGHT_BROWSERS_PATH: /app/data/ms-playwright
-      TMPDIR: /app/data/tmp
-      XDG_CACHE_HOME: /app/data/.cache
+      # --- 关键修改：删掉或注释掉下面这三行 ---
+      # 理由：让程序使用镜像内 /opt 目录下的浏览器，而不是去空的挂载卷里找
+      # PLAYWRIGHT_BROWSERS_PATH: /app/data/ms-playwright  <-- 删除此行
+      # TMPDIR: /app/data/tmp                             <-- 删除此行
+      # XDG_CACHE_HOME: /app/data/.cache                  <-- 删除此行
+      # ---------------------------------------
 
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-    shm_size: "1gb"
+    shm_size: "1gb" # 保持 1gb，足够 1-2 个 worker 使用
     init: true
     restart: unless-stopped
     healthcheck:
