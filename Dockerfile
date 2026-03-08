@@ -8,14 +8,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-# 2. 安装系统依赖（此时使用系统默认的 /tmp，不会报错）
+# 2. 安装系统依赖（去掉 xvfb, xauth, 以及冗余的图形库）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata ca-certificates openssh-server vim nano sudo procps \
-    libgtk-3-0 libasound2 libdbus-1-3 libx11-xcb1 libxcomposite1 \
-    libxdamage1 libxext6 libxfixes3 libnss3 libatk1.0-0 \
+    # Playwright/Camoufox 运行所需的最小基础库
+    libgtk-3-0 libasound2 libdbus-1-3 libnss3 libatk1.0-0 \
     libatk-bridge2.0-0 libgbm1 libpangocairo-1.0-0 libpango-1.0-0 \
-    libxkbcommon0 libxtst6 libdbus-glib-1-2 libxt6 \
-    xvfb \
+    libxkbcommon0 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

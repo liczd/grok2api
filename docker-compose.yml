@@ -30,7 +30,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-    shm_size: "2gb"
+    shm_size: "1gb"
     init: true
     restart: unless-stopped
     healthcheck:
