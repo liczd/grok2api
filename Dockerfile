@@ -1,16 +1,14 @@
 FROM python:3.13-slim
 
-# 1. 增加浏览器和临时目录的环境变量路径（关键）
+# 1. 基础环境设置（不要在这里设置 TMPDIR）
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     TZ=Asia/Shanghai \
-    UV_PROJECT_ENVIRONMENT=/app/.venv \
-    PLAYWRIGHT_BROWSERS_PATH=/app/data/ms-playwright \
-    TMPDIR=/app/data/tmp \
-    XDG_CACHE_HOME=/app/data/.cache
+    UV_PROJECT_ENVIRONMENT=/app/.venv
 
 ENV PATH="/app/.venv/bin:$PATH"
 
+# 2. 安装系统依赖（此时使用系统默认的 /tmp，不会报错）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata ca-certificates openssh-server vim nano sudo procps \
     libgtk-3-0 libasound2 libdbus-1-3 libx11-xcb1 libxcomposite1 \
@@ -22,18 +20,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# 3. 创建必要的持久化目录
+RUN mkdir -p /app/data/tmp /app/data/.cache /app/data/ms-playwright /app/logs
+
+# 4. 目录创建好之后，再设置指向持久化目录的环境变量（供运行时使用）
+ENV TMPDIR=/app/data/tmp \
+    PLAYWRIGHT_BROWSERS_PATH=/app/data/ms-playwright \
+    XDG_CACHE_HOME=/app/data/.cache
+
+# 5. 后续的业务逻辑构建...
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock /app/
-
 RUN uv sync --frozen --no-dev --no-install-project
 
-# 2. 安装浏览器时指定路径（确保安装到 /app/data 下，以便持久化或预制）
-RUN mkdir -p /app/data/ms-playwright && \
-    .venv/bin/python -m playwright install --with-deps chromium firefox
-
-# 3. 预取 Camoufox 时，通过环境变量告知路径
-RUN mkdir -p /app/data/.cache && \
-    .venv/bin/python -m camoufox fetch
+# 6.安装浏览器
+RUN .venv/bin/python -m playwright install --with-deps chromium firefox
+RUN .venv/bin/python -m camoufox fetch
 
 COPY config.defaults.toml /app/config.defaults.toml
 COPY app /app/app
