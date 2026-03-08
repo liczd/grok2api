@@ -36,7 +36,15 @@ uv run main.py
 python scripts/smoke_test.py --base-url http://127.0.0.1:8000
 ```
 
-- 项目部署
+- Docker项目部署
+容器中需要映射的存储目录：
+/app/data
+/app/logs
+
+需要给容器配置的环境变量：
+XDG_CACHE_HOME	/app/data/.cache	强制所有程序将缓存写到挂载目录
+PLAYWRIGHT_BROWSERS_PATH	/app/data/ms-playwright	强制浏览器安装到挂载目录
+TMPDIR	/app/data/tmp	强制临时文件写到挂载目录
 
 ```
 git clone https://github.com/TQZHR/grok2api.git
