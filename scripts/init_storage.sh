@@ -1,22 +1,20 @@
 #!/usr/bin/env sh
 set -eu
 
-DATA_DIR="/app/data"
-DEFAULT_CONFIG="/app/config.defaults.toml"
+ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+DATA_DIR="$ROOT_DIR/data"
+LOG_DIR="$ROOT_DIR/logs"
+TMP_DIR="$DATA_DIR/tmp"
+DEFAULT_CONFIG="$ROOT_DIR/config.defaults.toml"
 
-# 确保目录存在
-mkdir -p "$DATA_DIR"
+mkdir -p "$DATA_DIR" "$LOG_DIR" "$TMP_DIR"
 
-# 仅在不存在配置文件时才拷贝，防止覆盖用户的自定义配置
 if [ ! -f "$DATA_DIR/config.toml" ]; then
-  echo "[Init] Initializing default config.toml"
   cp "$DEFAULT_CONFIG" "$DATA_DIR/config.toml"
 fi
 
-# 确保 Token 文件存在
 if [ ! -f "$DATA_DIR/token.json" ]; then
   echo "{}" > "$DATA_DIR/token.json"
 fi
 
-# Claw.cloud 某些存储驱动不支持 chmod，增加容错
-chmod 644 "$DATA_DIR/config.toml" 2>/dev/null || true
+chmod 600 "$DATA_DIR/config.toml" "$DATA_DIR/token.json" || true
