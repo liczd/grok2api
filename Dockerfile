@@ -1,28 +1,33 @@
-# 使用官方 uv 镜像作为构建阶段
+# 阶段一：构建阶段 (使用 uv 官方镜像)
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS builder
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    # 强制指定浏览器下载路径到构建目录，方便复制
+    PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright \
+    CAMOUFOX_BROWSER_PATH=/opt/camoufox
 
 WORKDIR /app
 
 # 安装构建依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# 同步依赖（利用缓存）
+# 同步依赖 (利用 uv 缓存)
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --no-dev
 
-# 安装 Playwright (在构建阶段完成)
-ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
-RUN uv run playwright install --with-deps chromium
+# 预安装 Playwright 浏览器 (Chromium)
+RUN uv run playwright install chromium
 
-# 最终运行阶段
+# 预安装 Camoufox 浏览器
+RUN mkdir -p /opt/camoufox && \
+    XDG_CACHE_HOME=/opt/camoufox uv run python -c "from camoufox.download import download_browser; download_browser()"
+
+# 阶段二：运行阶段
 FROM python:3.13-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1 \
@@ -30,18 +35,20 @@ ENV PYTHONUNBUFFERED=1 \
     VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH" \
     PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright \
-    # 关键配置：确保运行时产生的临时文件和缓存都在挂载卷内
+    CAMOUFOX_BROWSER_PATH=/opt/camoufox \
+    # 关键：适配 Claw Cloud 只读文件系统，重定向所有写入操作到挂载卷
     XDG_CACHE_HOME=/app/data/.cache \
-    TMPDIR=/app/data/tmp
+    TMPDIR=/app/data/tmp \
+    PYTHONPATH=/app
 
 WORKDIR /app
 
 # 从构建阶段复制环境和浏览器
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /opt/ms-playwright /opt/ms-playwright
+COPY --from=builder /opt/camoufox /opt/camoufox
 
-# 安装运行时必要的系统库 (Playwright 依赖)
-# 这里的技巧是利用已安装的 playwright 获取依赖列表并安装
+# 安装运行时必要的系统库 (修正了 librandr2 -> libxrandr2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     tzdata \
@@ -56,21 +63,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxdamage1 \
     libxext6 \
     libxfixes3 \
-    librandr2 \
+    libxrandr2 \
     libgbm1 \
     libpango-1.0-0 \
     libcairo2 \
     libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
-# 复制项目文件
+# 复制项目代码
 COPY config.defaults.toml /app/
 COPY app /app/app
 COPY main.py /app/main.py
 COPY scripts /app/scripts
 
-# 权限与目录预设
+# 目录权限预设 (在构建镜像时创建好挂载点)
 RUN mkdir -p /app/data /app/logs /app/data/tmp /app/data/.cache \
+    && chmod -R 777 /app/data /app/logs \
     && chmod +x /app/scripts/*.sh \
     && sed -i 's/\r$//' /app/scripts/*.sh
 

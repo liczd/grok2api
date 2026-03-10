@@ -30,8 +30,8 @@ services:
       # --------------------------------------------
 
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+      - grok2api-data:/app/data
+      - grok2api-logs:/app/logs
 
     # 共享内存优化
     shm_size: "1gb"
@@ -98,6 +98,8 @@ services:
       retries: 10
 
 volumes:
+  grok2api-data:
+  grok2api-logs:
   redis-data:
   pgsql-data:
   mysql-data:
