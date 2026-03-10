@@ -28,5 +28,10 @@ chmod 600 "$DATA_DIR/config.toml" "$DATA_DIR/token.json" 2>/dev/null || true
 if [ ! -f "$CACHE_DIR/camoufox/version.json" ] && [ -d "/usr/local/share/camoufox" ]; then
   echo "Linking pre-installed camoufox to cache directory..."
   rm -rf "$CACHE_DIR/camoufox"
+  # 建立顶级目录软连
   ln -s /usr/local/share/camoufox "$CACHE_DIR/camoufox"
+  
+  # 权限检查与补齐 (camoufox-bin 必须可执行)
+  chmod +x /usr/local/share/camoufox/camoufox-bin 2>/dev/null || true
+  chmod +x /usr/local/share/camoufox/camoufox 2>/dev/null || true
 fi

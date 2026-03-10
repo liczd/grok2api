@@ -56,6 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libatk-bridge2.0-0 \
     libcups2 \
     libdrm2 \
+    libdbus-glib-1-2 \
     libxkbcommon0 \
     libxcomposite1 \
     libxdamage1 \
@@ -66,6 +67,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libcairo2 \
     libasound2 \
+    libgtk-3-0 \
+    libxt6 \
+    libx11-xcb1 \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制项目代码
