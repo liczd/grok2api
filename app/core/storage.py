@@ -29,10 +29,14 @@ import orjson
 import aiofiles
 from app.core.logger import logger
 
+# 基础路径获取
+BASE_DIR = Path(__file__).parent.parent.parent
+STORAGE_ROOT = Path(os.getenv("SERVER_STORAGE_URL", str(BASE_DIR / "data")))
+
 # 配置文件路径
-CONFIG_FILE = Path(__file__).parent.parent.parent / "data" / "config.toml"
-TOKEN_FILE = Path(__file__).parent.parent.parent / "data" / "token.json"
-LOCK_DIR = Path(__file__).parent.parent.parent / "data" / ".locks"
+CONFIG_FILE = STORAGE_ROOT / "config.toml"
+TOKEN_FILE = STORAGE_ROOT / "token.json"
+LOCK_DIR = STORAGE_ROOT / ".locks"
 
 # JSON 序列化优化助手函数
 def json_dumps(obj: Any) -> str:

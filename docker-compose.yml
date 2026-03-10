@@ -20,15 +20,12 @@ services:
       REGISTER_ACTION_ID: "grok-register"
       BROWSER_TYPE: "camoufox"
 
-      # --- 关键路径优化：适配 Claw.cloud 存储机制 ---
-      # 1. 指向镜像内安装好的只读浏览器内核路径
+      # --- 关键路径优化：适配 Claw.cloud 只读存储机制 ---
+      # 1. 明确指向镜像内预装好的浏览器内核
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
 
-      # 2. 将运行时产生的“变更文件”强制导向挂载卷，避免容器层变更报错
-      # 浏览器运行时产生的 profile、cookies、addon 缓存都会存入此处
-      XDG_CACHE_HOME: /app/data/.browser_runtime
-
-      # 3. 临时文件也导向挂载卷
+      # 2. 将所有运行时产生的临时文件、缓存、Profile 全部导向挂载好的 /app/data
+      XDG_CACHE_HOME: /app/data/.cache
       TMPDIR: /app/data/tmp
       # --------------------------------------------
 
