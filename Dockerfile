@@ -22,9 +22,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 RUN uv run playwright install chromium
 
 # 2. 预安装 Camoufox 浏览器到固定目录
-# 使用 CAMOUFOX_DIR 环境变量，确保下载到指定路径
-RUN mkdir -p /usr/local/share/camoufox && \
-    CAMOUFOX_DIR=/usr/local/share/camoufox uv run camoufox fetch
+# 使用 XDG_CACHE_HOME 环境变量，确保下载到指定路径，替代无效的 CAMOUFOX_DIR
+RUN mkdir -p /usr/local/share && \
+    XDG_CACHE_HOME=/usr/local/share uv run camoufox fetch
 
 # 阶段二：运行阶段
 FROM python:3.13-slim-bookworm
@@ -34,8 +34,6 @@ ENV PYTHONUNBUFFERED=1 \
     VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH" \
     PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright \
-    # 关键：告知 camoufox 静态浏览器文件在镜像内的位置
-    CAMOUFOX_DIR=/usr/local/share/camoufox \
     # 关键：适配 Claw Cloud 只读文件系统，重定向所有写入操作到挂载卷
     XDG_CACHE_HOME=/app/data/.cache \
     TMPDIR=/app/data/tmp \
