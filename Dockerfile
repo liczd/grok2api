@@ -25,7 +25,7 @@ RUN uv run playwright install chromium
 
 # 预安装 Camoufox 浏览器
 RUN mkdir -p /opt/camoufox && \
-    XDG_CACHE_HOME=/opt/camoufox uv run python -c "from camoufox.download import download_browser; download_browser()"
+    XDG_CACHE_HOME=/opt/camoufox uv run camoufox fetch
 
 # 阶段二：运行阶段
 FROM python:3.13-slim-bookworm
